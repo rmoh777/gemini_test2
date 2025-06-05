@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Plan Finder - AI-Powered Recommendations</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --error: #ef4444;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --radius: 0.5rem;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: var(--text);
+            background: var(--background);
+            padding: var(--spacing-md);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .description {
+            color: var(--secondary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .api-key-container {
+            position: relative;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: var(--spacing-sm);
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--secondary);
+            cursor: pointer;
+        }
+
+        .char-counter {
+            text-align: right;
+            color: var(--secondary);
+            font-size: 0.875rem;
+            margin-top: var(--spacing-xs);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: var(--spacing-lg) 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            display: none;
+            background: #fee2e2;
+            color: var(--error);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius);
+            margin: var(--spacing-md) 0;
+        }
+
+        .results {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin-top: var(--spacing-lg);
+            overflow-x: auto;
+        }
+
+        .summary {
+            background: #e0e7ef;
+            border-radius: 1.25rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 1px 6px rgba(37,99,235,0.07);
+            color: #1e293b;
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .summary h3 {
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .summary p {
+            color: #1e293b;
+            line-height: 1.4;
+            font-size: 1rem;
+        }
+
+        .plans-row {
+            display: flex;
+            flex-direction: row;
+            gap: 1.2rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .plan-card {
+            background: #fff;
+            border-radius: 1.25rem;
+            box-shadow: 0 2px 16px rgba(37,99,235,0.08);
+            padding: 1.1rem 1rem 1rem 1rem;
+            min-width: 260px;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            border: 2px solid var(--border);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .plan-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 24px rgba(37,99,235,0.15);
+        }
+
+        .plan-header {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.03em;
+        }
+
+        .rank-best {
+            background: #e0f2fe;
+            color: #2563eb;
+        }
+
+        .rank-great {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .rank-good {
+            background: #fef9c3;
+            color: #92400e;
+        }
+
+        .carrier {
+            color: var(--primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.15rem;
+        }
+
+        .plan-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin: 0.15rem 0 0.3rem 0;
+            color: #1e293b;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+        }
+
+        .features {
+            margin: 0.2rem 0 0.2rem 0;
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+
+        .features li {
+            margin-bottom: 0.2rem;
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            color: #334155;
+        }
+
+        .features li::before {
+            content: "\2713";
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 0.4rem;
+        }
+
+        .plan-explanation {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+            color: #64748b;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        .plan-details-btn {
+            margin-top: 0.7rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.5rem 1.1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(37,99,235,0.08);
+            transition: background 0.2s;
+        }
+
+        .plan-details-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        @media (max-width: 1100px) {
+            .plans-row {
+                flex-direction: row;
+                overflow-x: auto;
+                gap: 1rem;
+            }
+            .plan-card {
+                min-width: 220px;
+                max-width: 260px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+            .results {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .plans-row {
+                flex-direction: row;
+                overflow-x: auto;
+                gap: 0.7rem;
+            }
+            .plan-card {
+                min-width: 180px;
+                max-width: 220px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mobile Plan Finder</h1>
+            <p class="description">Get personalized mobile plan recommendations powered by AI</p>
+        </header>
+
+        <form id="planForm">
+            <div class="form-group">
+                <label for="requirements">What are you looking for in a mobile plan?</label>
+                <textarea id="requirements" rows="4" required 
+                    placeholder="Example: I need unlimited data for streaming, international calling, and a family plan for 4 people"
+                    maxlength="500"></textarea>
+                <div class="char-counter"><span id="charCount">0</span>/500</div>
+            </div>
+            <button type="submit" id="findPlansBtn">Find My Plans</button>
+            <button type="button" id="startOverBtn" style="display:none;margin-left:1rem;">Start Over</button>
+        </form>
+
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Finding the perfect plans for you...</p>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const MOBILE_PLANS = [
+            // Verizon Plans
+            {
+                id: 1,
+                name: "Unlimited Welcome",
+                carrier: "Verizon",
+                price: 65,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "No"
+            },
+            {
+                id: 2,
+                name: "Unlimited Plus",
+                carrier: "Verizon",
+                price: 80,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "25GB hotspot", "HD video"],
+                hotspot: "25GB"
+            },
+            {
+                id: 3,
+                name: "Unlimited Ultimate",
+                carrier: "Verizon",
+                price: 90,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "60GB hotspot", "4K video", "International calling"],
+                hotspot: "60GB"
+            },
+            {
+                id: 4,
+                name: "5G Start",
+                carrier: "Verizon",
+                price: 70,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "No"
+            },
+            {
+                id: 5,
+                name: "5G Play More",
+                carrier: "Verizon",
+                price: 85,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "25GB hotspot", "Disney+ included"],
+                hotspot: "25GB"
+            },
+
+            // T-Mobile Plans
+            {
+                id: 6,
+                name: "Essentials",
+                carrier: "T-Mobile",
+                price: 60,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "3G speeds"
+            },
+            {
+                id: 7,
+                name: "Magenta",
+                carrier: "T-Mobile",
+                price: 70,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "5GB hotspot", "Netflix included"],
+                hotspot: "5GB"
+            },
+            {
+                id: 8,
+                name: "Magenta MAX",
+                carrier: "T-Mobile",
+                price: 85,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "40GB hotspot", "Netflix included", "4K video"],
+                hotspot: "40GB"
+            },
+            {
+                id: 9,
+                name: "Go5G",
+                carrier: "T-Mobile",
+                price: 75,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "15GB hotspot", "Apple TV+ included"],
+                hotspot: "15GB"
+            },
+            {
+                id: 10,
+                name: "Go5G Plus",
+                carrier: "T-Mobile",
+                price: 90,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "50GB hotspot", "Apple TV+ included", "4K video"],
+                hotspot: "50GB"
+            },
+
+            // AT&T Plans
+            {
+                id: 11,
+                name: "Unlimited Starter",
+                carrier: "AT&T",
+                price: 65,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "No"
+            },
+            {
+                id: 12,
+                name: "Unlimited Extra",
+                carrier: "AT&T",
+                price: 75,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "15GB hotspot", "HBO Max included"],
+                hotspot: "15GB"
+            },
+            {
+                id: 13,
+                name: "Unlimited Elite",
+                carrier: "AT&T",
+                price: 85,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "40GB hotspot", "HBO Max included", "4K video"],
+                hotspot: "40GB"
+            },
+            {
+                id: 14,
+                name: "Value Plus",
+                carrier: "AT&T",
+                price: 50,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "No"
+            },
+            {
+                id: 15,
+                name: "Premium",
+                carrier: "AT&T",
+                price: 80,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "30GB hotspot", "HBO Max included", "HD video"],
+                hotspot: "30GB"
+            },
+
+            // Budget Carrier Plans
+            {
+                id: 16,
+                name: "Unlimited",
+                carrier: "Visible",
+                price: 30,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "One device"
+            },
+            {
+                id: 17,
+                name: "Unlimited Plus",
+                carrier: "Visible",
+                price: 45,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "Unlimited hotspot", "HD video"],
+                hotspot: "Unlimited"
+            },
+            {
+                id: 18,
+                name: "Unlimited",
+                carrier: "Mint Mobile",
+                price: 30,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming"],
+                hotspot: "5GB"
+            },
+            {
+                id: 19,
+                name: "Unlimited Premium",
+                carrier: "Mint Mobile",
+                price: 40,
+                data: "Unlimited",
+                features: ["5G", "Premium streaming", "15GB hotspot", "HD video"],
+                hotspot: "15GB"
+            },
+            {
+                id: 20,
+                name: "Unlimited",
+                carrier: "Metro by T-Mobile",
+                price: 50,
+                data: "Unlimited",
+                features: ["5G", "Talk & Text", "Basic streaming", "Google One included"],
+                hotspot: "5GB"
+            }
+        ];
+
+        // UI Elements
+        const form = document.getElementById('planForm');
+        const requirementsInput = document.getElementById('requirements');
+        const charCount = document.getElementById('charCount');
+        const loading = document.querySelector('.loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const results = document.getElementById('results');
+        const findPlansBtn = document.getElementById('findPlansBtn');
+        const startOverBtn = document.getElementById('startOverBtn');
+
+        // Hardcoded Gemini API key (hidden from UI, but visible in source)
+        const GEMINI_API_KEY = "AIzaSyBZpY3-IjZCgxF0a-nQ6Ovs4Pz6N6z1UM0";
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Character counter
+            requirementsInput.addEventListener('input', () => {
+                charCount.textContent = requirementsInput.value.length;
+            });
+            // Form submission
+            form.addEventListener('submit', handleSubmit);
+            // Start Over button
+            startOverBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        });
+
+        // Form submission handler
+        async function handleSubmit(event) {
+            event.preventDefault();
+            // Validate input
+            const requirements = requirementsInput.value.trim();
+            if (requirements.length < 20) {
+                showError('Please provide more details about your requirements (minimum 20 characters)');
+                return;
+            }
+            // Show loading state
+            showLoading();
+            try {
+                const data = await getRecommendations(requirements, GEMINI_API_KEY);
+                renderResults(data);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Gemini API call
+        async function getRecommendations(userInput, apiKey) {
+            const prompt = `You are a mobile plan expert helping someone who might not be familiar with technical terms. Based on this request: "${userInput}", recommend exactly 3 plan IDs from this list that best match the user's needs. Rank them as "Best", "Great", and "Good". Return ONLY the 3 plan IDs as comma-separated numbers with their rank (example: "1:Best,7:Great,12:Good"). Plans: ${JSON.stringify(MOBILE_PLANS)}`;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.2,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 100,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'Failed to get recommendations. Please check your API key and try again.');
+                }
+
+                const data = await response.json();
+                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    throw new Error('Invalid response format from Gemini API');
+                }
+
+                const planMatches = data.candidates[0].content.parts[0].text.trim().split(',').map(item => {
+                    const [id, rank] = item.split(':');
+                    return { id: parseInt(id.trim()), rank: rank.trim() };
+                });
+                
+                if (planMatches.length !== 3 || planMatches.some(match => isNaN(match.id))) {
+                    throw new Error('Invalid plan recommendations received');
+                }
+
+                const recommendedPlans = planMatches.map(match => ({
+                    ...MOBILE_PLANS.find(plan => plan.id === match.id),
+                    rank: match.rank
+                }));
+                
+                // Get explanations for the recommended plans
+                const explanations = await getPlanExplanations(userInput, recommendedPlans, apiKey);
+                
+                return {
+                    plans: recommendedPlans,
+                    explanations: explanations
+                };
+            } catch (error) {
+                throw new Error('Error getting recommendations: ' + error.message);
+            }
+        }
+
+        // Get explanations for the recommended plans
+        async function getPlanExplanations(userInput, plans, apiKey) {
+            const prompt = `You are a friendly mobile plan expert explaining things to someone who might not be familiar with technical terms. Use simple, everyday language that a high school student would understand. For each of these plans, provide:
+1. A brief explanation (1-2 sentences) of why this plan matches the user's needs
+2. A short summary of why these 3 plans were selected overall
+
+User's request: "${userInput}"
+
+Plans:
+${plans.map(plan => `
+Plan ${plan.id} (${plan.rank}):
+- Name: ${plan.name}
+- Carrier: ${plan.carrier}
+- Price: $${plan.price}/mo
+- Data: ${plan.data}
+- Features: ${plan.features.join(', ')}
+- Hotspot: ${plan.hotspot}
+`).join('\n')}
+
+Format your response exactly like this:
+PLAN_EXPLANATIONS:
+${plans.map(plan => `Plan ${plan.id}: [Your explanation here]`).join('\n')}
+
+OVERALL_SUMMARY:
+[Your summary here]`;
+
+            try {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 500,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get plan explanations');
+                }
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+
+                // Parse the response
+                const planExplanations = {};
+                const planMatches = text.match(/Plan (\d+): (.*?)(?=\nPlan \d+:|$)/gs);
+                
+                if (planMatches) {
+                    planMatches.forEach(match => {
+                        const [_, planId, explanation] = match.match(/Plan (\d+): (.*)/);
+                        planExplanations[planId] = explanation.trim();
+                    });
+                }
+
+                const summaryMatch = text.match(/OVERALL_SUMMARY:\n(.*)/s);
+                const summary = summaryMatch ? summaryMatch[1].trim() : '';
+
+                return {
+                    planExplanations,
+                    summary
+                };
+            } catch (error) {
+                console.error('Error getting explanations:', error);
+                return {
+                    planExplanations: {},
+                    summary: 'Unable to generate explanations at this time.'
+                };
+            }
+        }
+
+        // Results renderer
+        function renderResults(data) {
+            const { plans, explanations } = data;
+            
+            // Add summary section
+            const summaryHtml = `
+                <div class="summary">
+                    <h3>Why These Plans?</h3>
+                    <p>${explanations.summary}</p>
+                </div>
+            `;
+
+            // Add plan cards with explanations
+            const plansHtml = `
+                <div class="plans-row">
+                    ${plans.map(plan => `
+                        <div class="plan-card">
+                            <div class="plan-header">
+                                <div class="rank-badge rank-${plan.rank.toLowerCase()}">${plan.rank}</div>
+                                <div class="carrier">${plan.carrier}</div>
+                                <div class="plan-name">${plan.name}</div>
+                                <div class="price">$${plan.price}<span style="font-size:0.9rem;font-weight:400;">/mo</span></div>
+                            </div>
+                            <ul class="features">
+                                <li>${plan.data} Data</li>
+                                ${plan.features.map(feature => `<li>${feature}</li>`).join('')}
+                                <li>Hotspot: ${plan.hotspot}</li>
+                            </ul>
+                            <div class="plan-explanation">
+                                ${explanations.planExplanations[plan.id] || 'No explanation available.'}
+                            </div>
+                            <button class="plan-details-btn" tabindex="0">Full Plan Details</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            results.innerHTML = summaryHtml + plansHtml;
+            results.style.display = 'flex';
+            // Hide Find My Plans, show Start Over
+            findPlansBtn.style.display = 'none';
+            startOverBtn.style.display = 'inline-block';
+        }
+
+        // UI state management
+        function showLoading() {
+            loading.style.display = 'block';
+            form.style.display = 'none';
+            errorMessage.style.display = 'none';
+            results.style.display = 'none';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+            form.style.display = 'block';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 
