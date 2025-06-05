@@ -1,0 +1,8 @@
+{
+  "name": "mobile-plan-finder",
+  "version": "1.0.0",
+  "description": "AI-powered mobile plan finder",
+  "dependencies": {
+    "@google/generative-ai": "^0.2.0"
+  }
+} 
